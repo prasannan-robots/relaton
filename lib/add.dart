@@ -1,78 +1,104 @@
 import 'package:flutter/material.dart';
-import 'package:relaton/textentry.dart';
-import 'main.dart';
+import 'package:intl/intl.dart';
+
+import 'main.dart' show green;
+import 'relaton.dart';
 import 'textentry.dart';
 
-class add_relaton extends StatefulWidget {
-  const add_relaton({Key? key}) : super(key: key);
+class AddRelatonPage extends StatefulWidget {
+  const AddRelatonPage({super.key});
 
   @override
-  _add_relatonState createState() => _add_relatonState();
+  State<AddRelatonPage> createState() => _AddRelatonPageState();
 }
 
-class _add_relatonState extends State<add_relaton> {
+class _AddRelatonPageState extends State<AddRelatonPage> {
+  final _formKey = GlobalKey<FormState>();
+  final _name = TextEditingController();
+  final _phone = TextEditingController();
+  DateTime? _birthday;
+
+  @override
+  void dispose() {
+    _name.dispose();
+    _phone.dispose();
+    super.dispose();
+  }
+
+  Future<void> _pickBirthday() async {
+    final now = DateTime.now();
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _birthday ?? DateTime(now.year - 20),
+      firstDate: DateTime(1900),
+      lastDate: now,
+    );
+    if (picked != null) setState(() => _birthday = picked);
+  }
+
+  void _submit() {
+    if (!_formKey.currentState!.validate()) return;
+    Navigator.pop(
+      context,
+      Relaton(
+        name: _name.text.trim(),
+        phone: _phone.text.trim(),
+        birthday: _birthday,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-        appBar: AppBar(
-          // Here we take the value from the MyHomePage object that was created by
-          // the App.build method, and use it to set our appbar title.
-          title: Text("Relaton",
-              style: TextStyle(
-                  fontFamily: 'monospace',
-                  color: Color.fromARGB(255, 5, 194, 153))),
-        ),
-        body: add_relaton_form());
-  }
-}
-
-class add_relaton_form extends StatefulWidget {
-  const add_relaton_form({Key? key}) : super(key: key);
-
-  @override
-  _add_relaton_formState createState() => _add_relaton_formState();
-}
-
-class _add_relaton_formState extends State<add_relaton_form> {
-  final _formKey = GlobalKey<FormState>();
-  @override
-  Widget build(BuildContext context) {
-    return SingleChildScrollView(
+      appBar: AppBar(title: const Text('Add Relaton')),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
         child: Form(
-      key: _formKey,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: <Widget>[
-          Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: textentrywidget(
-                label_text: "Name",
-                hint_text:
-                    "Enter your Relaton Name"), // here place whathever child you want
+          key: _formKey,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              TextEntryWidget(
+                controller: _name,
+                labelText: 'Name',
+                hintText: "Your relaton's name",
+                validator: (v) => (v == null || v.trim().isEmpty) ? 'Please enter a name' : null,
+              ),
+              const SizedBox(height: 16),
+              TextEntryWidget(
+                controller: _phone,
+                labelText: 'Phone',
+                hintText: 'Phone number (optional)',
+                keyboardType: TextInputType.phone,
+              ),
+              const SizedBox(height: 16),
+              OutlinedButton.icon(
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: green,
+                  side: const BorderSide(color: green, width: 2),
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                ),
+                onPressed: _pickBirthday,
+                icon: const Icon(Icons.cake_outlined),
+                label: Text(
+                  _birthday == null ? 'Pick a birthday (optional)' : DateFormat.yMMMMd().format(_birthday!),
+                ),
+              ),
+              const SizedBox(height: 32),
+              FilledButton(
+                style: FilledButton.styleFrom(
+                  backgroundColor: green,
+                  foregroundColor: Colors.black,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                ),
+                onPressed: _submit,
+                child: const Text('Save', style: TextStyle(fontFamily: 'monospace', fontSize: 16)),
+              ),
+            ],
           ),
-          Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: textentrywidget(
-                label_text: "Phone",
-                hint_text:
-                    "Enter your Relaton Phone no"), // here place whathever child you want
-          ),
-          Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: textentrywidget(
-                label_text: "Birth_Date",
-                hint_text:
-                    "Enter your Relaton Birthday date"), // here place whathever child you want
-          ),
-          new Container(
-              padding: const EdgeInsets.only(left: 150.0, top: 40.0),
-              child: new TextButton(
-                child: const Text('Submit'),
-                onPressed: null,
-              )),
-        ],
+        ),
       ),
-    ));
+    );
   }
 }

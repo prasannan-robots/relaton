@@ -1,96 +1,164 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
+
 import 'add.dart';
+import 'relaton.dart';
+import 'storage.dart';
 
-const Color gren = Color.fromARGB(255, 5, 194, 153);
-void main() {
-  runApp(const MyApp());
-}
+const Color green = Color.fromARGB(255, 5, 194, 153);
 
-class MyApp extends StatelessWidget {
-  const MyApp({Key? key}) : super(key: key);
+void main() => runApp(const RelatonApp());
 
-  // This widget is the root of your application.
+class RelatonApp extends StatelessWidget {
+  const RelatonApp({super.key});
+
   @override
   Widget build(BuildContext context) {
+    final base = ThemeData.dark(useMaterial3: true);
     return MaterialApp(
       title: 'Relaton',
-      theme: ThemeData.dark(),
-      home: const MyHomePage(title: 'Relaton'),
+      theme: base.copyWith(
+        colorScheme: base.colorScheme.copyWith(primary: green, secondary: green),
+        appBarTheme: const AppBarTheme(
+          titleTextStyle: TextStyle(fontFamily: 'monospace', color: green, fontSize: 20),
+        ),
+        floatingActionButtonTheme:
+            const FloatingActionButtonThemeData(backgroundColor: green, foregroundColor: Colors.black),
+      ),
+      home: const HomePage(),
     );
   }
 }
 
-class MyHomePage extends StatefulWidget {
-  const MyHomePage({Key? key, required this.title}) : super(key: key);
-
-  // This widget is the home page of your application. It is stateful, meaning
-  // that it has a State object (defined below) that contains fields that affect
-  // how it looks.
-
-  // This class is the configuration for the state. It holds the values (in this
-  // case the title) provided by the parent (in this case the App widget) and
-  // used by the build method of the State. Fields in a Widget subclass are
-  // always marked "final".
-
-  final String title;
+class HomePage extends StatefulWidget {
+  const HomePage({super.key});
 
   @override
-  State<MyHomePage> createState() => _MyHomePageState();
+  State<HomePage> createState() => _HomePageState();
 }
 
-class _MyHomePageState extends State<MyHomePage> {
+class _HomePageState extends State<HomePage> {
+  final _store = RelatonStore();
+  List<Relaton> _relatons = [];
+  bool _loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    final relatons = await _store.load();
+    relatons.sort((a, b) {
+      final da = a.daysUntilBirthday, db = b.daysUntilBirthday;
+      if (da == null && db == null) return a.name.compareTo(b.name);
+      if (da == null) return 1;
+      if (db == null) return -1;
+      return da.compareTo(db);
+    });
+    if (mounted) {
+      setState(() {
+        _relatons = relatons;
+        _loading = false;
+      });
+    }
+  }
+
+  Future<void> _addRelaton() async {
+    final created = await Navigator.push<Relaton>(
+      context,
+      MaterialPageRoute(builder: (_) => const AddRelatonPage()),
+    );
+    if (created != null) {
+      await _store.save([..._relatons, created]);
+      await _load();
+    }
+  }
+
+  Future<void> _delete(Relaton relaton) async {
+    final remaining = List<Relaton>.from(_relatons)..remove(relaton);
+    await _store.save(remaining);
+    await _load();
+  }
+
+  String _subtitle(Relaton r) {
+    final parts = <String>[];
+    if (r.phone.isNotEmpty) parts.add(r.phone);
+    final days = r.daysUntilBirthday;
+    if (r.birthday != null) {
+      final date = DateFormat.MMMMd().format(r.birthday!);
+      parts.add(days == 0 ? '🎂 Birthday today!' : 'Birthday $date (in $days days)');
+    }
+    return parts.join('  ·  ');
+  }
+
   @override
   Widget build(BuildContext context) {
-    // This method is rerun every time setState is called, for instance as done
-    // by the _incrementCounter method above.
-    //
-    // The Flutter framework has been optimized to make rerunning build methods
-    // fast, so that you can just rebuild anything that needs updating rather
-    // than having to individually change instances of widgets.
     return Scaffold(
-      appBar: AppBar(
-        // Here we take the value from the MyHomePage object that was created by
-        // the App.build method, and use it to set our appbar title.
-        title: Text(widget.title,
-            style: TextStyle(
-                fontFamily: 'monospace',
-                color: Color.fromARGB(255, 5, 194, 153))),
+      appBar: AppBar(title: const Text('Relaton')),
+      body: _loading
+          ? const Center(child: CircularProgressIndicator(color: green))
+          : _relatons.isEmpty
+              ? const _EmptyState()
+              : ListView.separated(
+                  itemCount: _relatons.length,
+                  separatorBuilder: (_, __) => const Divider(height: 1),
+                  itemBuilder: (context, i) {
+                    final r = _relatons[i];
+                    return Dismissible(
+                      key: ValueKey('${r.name}-${r.phone}-$i'),
+                      direction: DismissDirection.endToStart,
+                      background: Container(
+                        color: Colors.red.shade900,
+                        alignment: Alignment.centerRight,
+                        padding: const EdgeInsets.only(right: 24),
+                        child: const Icon(Icons.delete),
+                      ),
+                      onDismissed: (_) => _delete(r),
+                      child: ListTile(
+                        leading: CircleAvatar(
+                          backgroundColor: green,
+                          child: Text(
+                            r.name.isNotEmpty ? r.name[0].toUpperCase() : '?',
+                            style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
+                          ),
+                        ),
+                        title: Text(r.name, style: const TextStyle(fontFamily: 'monospace')),
+                        subtitle: _subtitle(r).isEmpty ? null : Text(_subtitle(r)),
+                      ),
+                    );
+                  },
+                ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: _addRelaton,
+        tooltip: 'Add Relaton',
+        child: const Icon(Icons.add),
       ),
-      body: Center(
-        // Center is a layout widget. It takes a single child and positions it
-        // in the middle of the parent.
+    );
+  }
+}
+
+class _EmptyState extends StatelessWidget {
+  const _EmptyState();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Center(
+      child: Padding(
+        padding: EdgeInsets.all(32),
         child: Column(
-          // Column is also a layout widget. It takes a list of children and
-          // arranges them vertically. By default, it sizes itself to fit its
-          // children horizontally, and tries to be as tall as its parent.
-          //
-          // Invoke "debug painting" (press "p" in the console, choose the
-          // "Toggle Debug Paint" action from the Flutter Inspector in Android
-          // Studio, or the "Toggle Debug Paint" command in Visual Studio Code)
-          // to see the wireframe for each widget.
-          //
-          // Column has various properties to control how it sizes itself and
-          // how it positions its children. Here we use mainAxisAlignment to
-          // center the children vertically; the main axis here is the vertical
-          // axis because Columns are vertical (the cross axis would be
-          // horizontal).
           mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[],
+          children: [
+            Icon(Icons.people_outline, size: 72, color: green),
+            SizedBox(height: 16),
+            Text('No relatons yet', style: TextStyle(fontFamily: 'monospace', fontSize: 18)),
+            SizedBox(height: 8),
+            Text('Tap + to add the people you want to keep in touch with.',
+                textAlign: TextAlign.center, style: TextStyle(color: Colors.white54)),
+          ],
         ),
       ),
-      floatingActionButton: FloatingActionButton(
-        splashColor: gren,
-        shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.all(Radius.circular(8))),
-        onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => const add_relaton()),
-          );
-        },
-        tooltip: 'Add Relaton ',
-        child: const Icon(Icons.add),
-      ), // This trailing comma makes auto-formatting nicer for build methods.
     );
   }
 }

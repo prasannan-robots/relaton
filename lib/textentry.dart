@@ -1,37 +1,47 @@
 import 'package:flutter/material.dart';
-import 'main.dart';
 
-class textentrywidget extends StatefulWidget {
-  final String label_text, hint_text, initialValue;
-  const textentrywidget(
-      {Key? key,
-      this.label_text = "",
-      this.hint_text = "",
-      this.initialValue = ""})
-      : super(key: key);
+import 'main.dart' show green;
 
-  @override
-  _textentrywidgetState createState() => _textentrywidgetState();
-}
+/// A themed text field used across the app.
+class TextEntryWidget extends StatelessWidget {
+  const TextEntryWidget({
+    super.key,
+    this.controller,
+    this.labelText = '',
+    this.hintText = '',
+    this.keyboardType,
+    this.validator,
+  });
 
-class _textentrywidgetState extends State<textentrywidget> {
+  final TextEditingController? controller;
+  final String labelText;
+  final String hintText;
+  final TextInputType? keyboardType;
+  final String? Function(String?)? validator;
+
   @override
   Widget build(BuildContext context) {
     return TextFormField(
-      initialValue: widget.initialValue,
-      cursorColor: gren,
+      controller: controller,
+      keyboardType: keyboardType,
+      validator: validator,
+      cursorColor: green,
       cursorWidth: 6,
-      style: TextStyle(color: gren, fontFamily: "monospace"),
+      style: const TextStyle(color: green, fontFamily: 'monospace'),
       decoration: InputDecoration(
         enabledBorder: OutlineInputBorder(
-          borderSide: const BorderSide(color: gren, width: 2.0),
-          borderRadius: BorderRadius.circular(8.0),
+          borderSide: const BorderSide(color: green, width: 2),
+          borderRadius: BorderRadius.circular(8),
         ),
-        fillColor: Color.fromARGB(255, 39, 39, 39),
-        labelStyle: TextStyle(color: gren, fontFamily: "monospace"),
+        focusedBorder: OutlineInputBorder(
+          borderSide: const BorderSide(color: green, width: 2),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        fillColor: const Color.fromARGB(255, 39, 39, 39),
+        labelStyle: const TextStyle(color: green, fontFamily: 'monospace'),
         filled: true,
-        hintText: widget.hint_text,
-        labelText: widget.label_text,
+        hintText: hintText,
+        labelText: labelText,
       ),
     );
   }

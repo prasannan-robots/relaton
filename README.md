@@ -1,16 +1,12 @@
-# relaton
+# Relaton
 
-A new Flutter project.
+A small Flutter app to keep track of the people in your life — their name, phone number and
+birthday — sorted by whose birthday is coming up next. Data is stored locally on the device.
 
-## Getting Started
+## Run
 
-This project is a starting point for a Flutter application.
-
-A few resources to get you started if this is your first Flutter project:
-
-- [Lab: Write your first Flutter app](https://flutter.dev/docs/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://flutter.dev/docs/cookbook)
-
-For help getting started with Flutter, view our
-[online documentation](https://flutter.dev/docs), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+```bash
+flutter pub get
+flutter run        # or: flutter build apk / flutter build web
+flutter test
+```
